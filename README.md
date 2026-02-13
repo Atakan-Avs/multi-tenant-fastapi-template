@@ -1,59 +1,71 @@
-📦 multi-tenant-fastapi-template
+🏗 multi-tenant-fastapi-template
 
-A production-oriented FastAPI backend template demonstrating multi-tenant architecture, centralized error handling, and database-level consistency patterns.
+  A production-oriented FastAPI backend template demonstrating multi-tenant architecture, database-level consistency, and centralized error handling patterns.
 
-🚀 Overview
+📌 Overview
 
-This project showcases a real-world backend structure built with:
+  This project is designed as a backend foundation for SaaS-style or enterprise applications.
 
-JWT-based authentication
+  It focuses on:
 
-Argon2 password hashing
+  Secure authentication
 
-Multi-tenant isolation (organization-based)
+  Tenant isolation
 
-PostgreSQL (Dockerized)
+  Database integrity enforcement
 
-Alembic migrations
+  Clean architecture principles
 
-Composite unique constraints (org_id + email)
+  Production-ready error handling
 
-Centralized exception handling
-
-Clean dependency-based authorization design
-
-The goal of this project is to demonstrate backend engineering practices beyond simple CRUD APIs.
+  Rather than being a simple CRUD API, this project demonstrates real-world backend design decisions.
 
 🧠 Architecture Highlights
 🔐 Authentication
 
-JWT access tokens
+  JWT-based access tokens
 
-Password hashing with Argon2
+  Argon2 password hashing
 
-Dependency-based current user injection
+  Dependency-based get_current_user
+
+  Stateless API design
 
 🏢 Multi-Tenancy
 
-Organization-based tenant isolation
+  Organization-based isolation
 
-org_id derived from authenticated user
+  org_id derived from authenticated user
 
-No cross-tenant data access
+  No cross-tenant data access
+
+  All user queries scoped by tenant
 
 🛡 Database-Level Safety
 
-Composite unique constraint on (org_id, email)
+  PostgreSQL (Dockerized)
 
-Race-condition safe user creation
+  Alembic migration management
 
-IntegrityError mapped to HTTP 409 (Conflict)
+  Composite unique constraint:
+
+  UniqueConstraint("org_id", "email", name="uq_users_org_id_email")
+
+
+  This ensures race-condition-safe user creation.
+  
+  Even if two concurrent requests attempt to create the same email within the same organization,
+the database guarantees consistency.
 
 ⚙ Centralized Error Handling
 
-Global SQLAlchemy IntegrityError handler
+  Global SQLAlchemy IntegrityError handler
 
-Standardized API error response structure:
+  Database constraint violations mapped to HTTP 409
+
+  Standardized API error response format
+
+  Example response:
 
 {
   "error": {
@@ -63,81 +75,101 @@ Standardized API error response structure:
 }
 
 
-This ensures predictable API contracts and production-grade error responses.
+This approach ensures predictable API contracts and avoids leaking raw database errors.
 
-🧩 Tech Stack
-
-FastAPI
-
-SQLAlchemy
-
-PostgreSQL
-
-Alembic
-
-Docker
-
-Argon2
-
-JWT (python-jose)
-
-📂 Project Structure
+🏛 Project Structure
 app/
- ├── api/
- ├── core/
- ├── db/
- ├── models/
- ├── repositories/
- ├── schemas/
- └── main.py
+ ├── api/              # Route definitions
+ ├── core/             # Security, config, error handling
+ ├── db/               # Database session management
+ ├── models/           # SQLAlchemy models
+ ├── repositories/     # Data access layer
+ ├── schemas/          # Pydantic schemas
+ └── main.py           # FastAPI app entry point
 
 
 The project follows a layered architecture:
 
-API layer
+  API Layer
 
-Repository layer
+  Service/Repository Layer
 
-Database layer
+  Database Layer
 
-Centralized configuration & error handling
+  Centralized configuration & error handling
 
 🗄 Database
 
-PostgreSQL is containerized using Docker.
+  PostgreSQL 16 (Docker)
 
-Example composite constraint:
+  SQLAlchemy ORM
 
-UniqueConstraint("org_id", "email", name="uq_users_org_id_email")
+  Alembic for version-controlled migrations
+
+  Run migrations:
+
+  alembic upgrade head
+
+🚀 Quick Start
+1️⃣ Install dependencies
+  pip install -r requirements.txt
+
+2️⃣ Start PostgreSQL (Docker)
+  docker compose up -d
 
 
-Migrations are handled via Alembic.
+  (or run your existing PostgreSQL container)
 
-🎯 Why This Project
+3️⃣ Run migrations
+  alembic upgrade head
 
-This template demonstrates:
+4️⃣ Start the API
+  python -m uvicorn app.main:app --reload
 
-Clean dependency injection
+🧪 Example Flow
 
-Multi-tenant design principles
+  Register / login
 
-Database-driven consistency enforcement
+  Receive JWT token
 
-Production-ready error handling
+  Use token to access tenant-scoped endpoints
 
-Clear separation of concerns
+  Attempt duplicate email creation within same org → HTTP 409
 
-It is designed as a foundation for SaaS-style backends or enterprise APIs.
+🎯 Engineering Goals
+
+  This template demonstrates:
+
+  Dependency injection patterns
+
+  Multi-tenant isolation
+
+  Database-first consistency enforcement
+
+  Clean separation of concerns
+
+  Production-grade error mapping
+
+  Docker-based local development
 
 🔮 Planned Improvements
 
-Role-Based Access Control (RBAC)
+  Role-Based Access Control (RBAC)
 
-Refresh token rotation
+  Refresh token rotation
 
-Audit fields (created_at / updated_at)
+  Audit fields (created_at, updated_at)
 
-Soft delete support
+  Soft delete support
+
+  Request ID & structured logging
+
+  Background jobs / outbox pattern
+
+🧑‍💻 Author
+
+  Atakan Avsever
+  Backend-focused developer building production-oriented systems.
 
 Request ID & structured logging
 
