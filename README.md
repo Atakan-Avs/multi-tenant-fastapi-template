@@ -111,6 +111,7 @@ The project follows a layered architecture:
   alembic upgrade head
 
 🚀 Quick Start
+
 1️⃣ Install dependencies
   pip install -r requirements.txt
 
