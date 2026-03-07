@@ -29,5 +29,8 @@ def get_current_user(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    
+    if user.deleted_at is not None:
+        raise HTTPException(status_code=401, detail="User not found")
 
     return user

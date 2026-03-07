@@ -4,10 +4,13 @@ class Settings(BaseSettings):
     app_name: str = "TaskEngine"
     env: str = "dev"
     database_url: str  # .envden gelcek
+    refresh_token_pepper: str = ""
     
     jwt_secret_key: str = "CHANGE_ME_DEV_ONLY"
     jwt_algorithm: str = "HS256"
     jwt_access_token_exp_minutes: int = 60
+    jwt_refresh_token_exp_days: int = 30
+
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

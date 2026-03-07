@@ -4,8 +4,16 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db.deps import get_db
 from app.schemas import RegisterRequest, LoginRequest, TokenResponse
-from app.repositories import get_org, get_user_by_email, create_user
+from app.repositories import (
+    get_org,
+    get_user_by_email,
+    get_user_by_email_in_org,
+    create_user,
+)
 from app.core.security import hash_password, verify_password, create_access_token
+from app.core.tokens import generate_refresh_token, hash_token, refresh_expires_at
+from app.core.security import create_access_token
+from app.repositories.refresh_tokens import add_refresh_token
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -41,12 +49,31 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = get_user_by_email(db, payload.email)
+    user = get_user_by_email_in_org(db, payload.org_id, payload.email)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token(subject=str(user.id))
-    return TokenResponse(access_token=token)
+    access_token = create_access_token(subject=str(user.id))
+
+    # refresh token üret
+    plain_refresh = generate_refresh_token()
+    token_hash = hash_token(plain_refresh)
+
+    # DB’ye yaz (repo sadece add + flush)
+    with db.begin_nested():
+        add_refresh_token(
+            db,
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=refresh_expires_at(),
+        )
+    db.commit()
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=plain_refresh,
+        token_type="bearer",
+    )

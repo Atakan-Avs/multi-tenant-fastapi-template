@@ -9,4 +9,5 @@ __all__ = [
     "UserOut",
 ]
 
-__all__ += ["RegisterRequest", "LoginRequest", "TokenResponse"]
+__all__ += ["RegisterRequest", "LoginRequest", "TokenResponse",
+                "TaskCreate", "TaskUpdate", "TaskOut"]
