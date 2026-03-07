@@ -1,177 +1,210 @@
-🏗 multi-tenant-fastapi-template
+# 🏗 TaskEngine – Multi-Tenant FastAPI Backend
 
-  A production-oriented FastAPI backend template demonstrating multi-tenant architecture, database-level consistency, and centralized error handling patterns.
+A production-oriented FastAPI backend demonstrating multi-tenant architecture, secure authentication, session management, and permission-based RBAC.
 
-📌 Overview
+This project focuses on real-world backend engineering patterns rather than simple CRUD APIs.
 
-  This project is designed as a backend foundation for SaaS-style or enterprise applications.
+---
 
-  It focuses on:
+# 📌 Overview
 
-  Secure authentication
+TaskEngine is designed as a backend foundation for SaaS-style or enterprise applications.
 
-  Tenant isolation
+Key concepts implemented:
 
-  Database integrity enforcement
+- Multi-tenant architecture
+- JWT authentication with refresh token rotation
+- Session management with reuse detection
+- Permission-based RBAC system
+- Database-level consistency enforcement
+- Centralized error handling
+- Layered backend architecture
 
-  Clean architecture principles
+---
 
-  Production-ready error handling
+# 🧠 Architecture Highlights
 
-  Rather than being a simple CRUD API, this project demonstrates real-world backend design decisions.
+## 🔐 Authentication & Session Management
 
-🧠 Architecture Highlights
-🔐 Authentication
+Features:
 
-  JWT-based access tokens
+- JWT access tokens
+- Argon2 password hashing
+- Refresh token rotation
+- Refresh token reuse detection
+- Session revocation (logout / logout-all)
+- Hash-based refresh token storage
 
-  Argon2 password hashing
+Security design:
 
-  Dependency-based get_current_user
+Access tokens are short-lived and stateless.  
+Refresh tokens are stored as **hashed values** in the database to prevent token leakage.
 
-  Stateless API design
+If a revoked refresh token is reused, **all sessions for the user are revoked** to mitigate potential token theft.
 
-🏢 Multi-Tenancy
+---
 
-  Organization-based isolation
+## 🏢 Multi-Tenant Architecture
 
-  org_id derived from authenticated user
+Tenant isolation is enforced using organization scoping.
 
-  No cross-tenant data access
+Each user belongs to an organization.
 
-  All user queries scoped by tenant
-
-🛡 Database-Level Safety
-
-  PostgreSQL (Dockerized)
-
-  Alembic migration management
-
-  Composite unique constraint:
-
-  UniqueConstraint("org_id", "email", name="uq_users_org_id_email")
-
-
-  This ensures race-condition-safe user creation.
-  
-  Even if two concurrent requests attempt to create the same email within the same organization,
-the database guarantees consistency.
-
-⚙ Centralized Error Handling
-
-  Global SQLAlchemy IntegrityError handler
-
-  Database constraint violations mapped to HTTP 409
-
-  Standardized API error response format
-
-  Example response:
-
-{
-  "error": {
-    "code": "EMAIL_ALREADY_EXISTS",
-    "message": "Duplicate value violates unique constraint"
-  }
-}
+All queries are automatically scoped by:
 
 
-This approach ensures predictable API contracts and avoids leaking raw database errors.
+org_id
+This guarantees:
 
-🏛 Project Structure
+- No cross-tenant data access
+- Safe multi-tenant SaaS backend design
+
+---
+
+## 🛡 Permission-Based RBAC
+
+The system implements a **role → permission → user** hierarchy.
+
+Database tables:
+roles
+permissions
+user_roles
+role_permissions
+
+
+
+Permissions control access to API endpoints.
+
+Example permissions:
+task.create
+task.read
+task.update
+task.delete
+rbac.manage
+
+
+Authorization is enforced through FastAPI dependency guards:
+require_permission("task.delete")
+
+
+
+This allows flexible authorization without hardcoding roles in business logic.
+
+---
+
+## 🗄 Database Design
+
+Stack:
+
+- PostgreSQL
+- SQLAlchemy ORM
+- Alembic migrations
+
+Important constraint:
+UniqueConstraint("org_id", "email")
+
+
+
+This ensures safe concurrent user creation within tenants.
+
+Even under race conditions the database guarantees consistency.
+
+---
+
+## 📊 Task System
+
+The system includes a task workflow module.
+
+Features:
+
+- Create tasks
+- Update tasks
+- List tasks
+- Soft delete tasks
+- Restore tasks
+
+Task lifecycle events are stored in:
+task_events
+
+Example events:
+
+task_created
+task_deleted
+task_restored
+task_updated
+
+
+
+This enables audit history and future analytics.
+
+---
+
+## ⚙ Request Middleware & Observability
+
+Each request includes contextual metadata:
+
+- request_id
+- user_id
+- org_id
+- client_ip
+- user_agent
+
+Structured logs allow easier debugging and production monitoring.
+
+---
+
+# 🏛 Project Structure
 app/
- ├── api/              # Route definitions
- ├── core/             # Security, config, error handling
- ├── db/               # Database session management
- ├── models/           # SQLAlchemy models
- ├── repositories/     # Data access layer
- ├── schemas/          # Pydantic schemas
- └── main.py           # FastAPI app entry point
+├── api/ # Route definitions
+├── core/ # Security, middleware, configuration
+├── db/ # Database session
+├── models/ # SQLAlchemy models
+├── repositories/ # Data access layer
+├── services/ # Business logic layer
+├── schemas/ # Pydantic schemas
+└── main.py # FastAPI entrypoint
 
 
-The project follows a layered architecture:
 
-  API Layer
-
-  Service/Repository Layer
-
-  Database Layer
-
-  Centralized configuration & error handling
-
-🗄 Database
-
-  PostgreSQL 16 (Docker)
-
-  SQLAlchemy ORM
-
-  Alembic for version-controlled migrations
-
-  Run migrations:
-
-  alembic upgrade head
-
-🚀 Quick Start
-
-1️⃣ Install dependencies
-  pip install -r requirements.txt
-
-2️⃣ Start PostgreSQL (Docker)
-  docker compose up -d
+Architecture layers:
+API Layer
+Service Layer
+Repository Layer
+Database Layer
 
 
-  (or run your existing PostgreSQL container)
 
-3️⃣ Run migrations
-  alembic upgrade head
+---
 
-4️⃣ Start the API
-  python -m uvicorn app.main:app --reload
+# 🎯 Engineering Goals
 
-🧪 Example Flow
+This project demonstrates:
 
-  Register / login
+- Secure authentication patterns
+- Multi-tenant backend architecture
+- Permission-based RBAC
+- Session security (refresh rotation & reuse detection)
+- Database-first consistency
+- Layered backend architecture
+- Structured request logging
 
-  Receive JWT token
+---
 
-  Use token to access tenant-scoped endpoints
+# 🔮 Future Improvements
 
-  Attempt duplicate email creation within same org → HTTP 409
+Possible extensions:
 
-🎯 Engineering Goals
+- Redis caching layer
+- Background jobs (Celery / RQ)
+- Rate limiting
+- Notification system
+- Webhooks / event streaming
+- Permission caching
 
-  This template demonstrates:
+---
 
-  Dependency injection patterns
+# 🧑‍💻 Author
 
-  Multi-tenant isolation
+**Atakan Avsever**
 
-  Database-first consistency enforcement
-
-  Clean separation of concerns
-
-  Production-grade error mapping
-
-  Docker-based local development
-
-🔮 Planned Improvements
-
-  Role-Based Access Control (RBAC)
-
-  Refresh token rotation
-
-  Audit fields (created_at, updated_at)
-
-  Soft delete support
-
-  Request ID & structured logging
-
-  Background jobs / outbox pattern
-
-🧑‍💻 Author
-
-  Atakan Avsever
-  Backend-focused developer building production-oriented systems.
-
-Request ID & structured logging
-
-Background jobs / outbox pattern
+Backend-focused developer building production-oriented systems.
